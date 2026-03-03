@@ -13,8 +13,6 @@ namespace ecovector { class EcoVectorIndex; class BM25Index; }
 
 // Forward declarations
 class OnnxRuntime;
-class Chunker;
-class SentenceChunker;
 
 namespace ecovector {
 
@@ -22,10 +20,6 @@ class ObxManager;
 class Tokenizer;
 class KiwiTokenizer;
 class Embedder;
-enum class ChunkStrategy {
-    WORD = 0,       // Word-count based sliding window (default)
-    SENTENCE = 1    // Sentence-boundary aware chunking
-};
 
 class EcoVectorStore {
 public:
@@ -42,10 +36,6 @@ public:
                     const std::string& modelPath,
                     const std::string& kiwiModelDir);
     void close();
-
-    // Chunking strategy
-    void setChunkStrategy(ChunkStrategy strategy) { chunkStrategy_ = strategy; }
-    ChunkStrategy getChunkStrategy() const { return chunkStrategy_; }
 
     // Chunk prefix — prepended to each chunk after splitting
     void setChunkPrefix(const std::string& prefix) { chunkPrefix_ = prefix; }
@@ -131,11 +121,11 @@ public:
     // === ChunkParams 지원 addDocument ===
     int64_t addDocumentWithChunkParams(
         const std::string& text, const std::string& title,
-        int chunkStrategy, int chunkSize, int chunkOverlap);
+        int maxTokens, int overlapTokens);
     int addDocumentsWithChunkParams(
         const std::vector<std::string>& texts,
         const std::vector<std::string>& titles,
-        int chunkStrategy, int chunkSize, int chunkOverlap);
+        int maxTokens, int overlapTokens);
 
     // === 데이터 관리 ===
     bool removeDocumentById(uint64_t id);
@@ -179,7 +169,6 @@ private:
     std::unique_ptr<Embedder> embedder_;
     std::vector<std::unique_ptr<IRetriever>> ownedRetrievers_;  // retrievers created by factory methods
     std::string dbPath_;
-    ChunkStrategy chunkStrategy_ = ChunkStrategy::WORD;
     std::string chunkPrefix_;  // 각 청크에 prepend할 접두어 (빈 문자열이면 비활성)
     size_t kiwiCallCount_ = 0;  // Kiwi tokenization call counter (for periodic reload)
 
@@ -187,7 +176,7 @@ private:
     std::vector<std::string> chunkText(const std::string& text);
     std::vector<std::string> chunkText(const std::string& text, int16_t sourceType);
     std::vector<std::string> chunkTextWithParams(const std::string& text,
-                                                  int strategy, int size, int overlap);
+                                                  int maxTokens, int overlapTokens);
     static std::string utf8Truncate(const std::string& str, size_t maxBytes);
 };
 

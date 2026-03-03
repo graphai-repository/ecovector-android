@@ -65,6 +65,20 @@ std::vector<int32_t> Tokenizer::encode(const std::string& text) {
     return ids;
 }
 
+int Tokenizer::countTokens(const std::string& text) {
+    if (!tokenizer_) return 0;
+    try {
+        auto raw_ids = tokenizer_->Encode(text);
+        // Remove trailing padding if any
+        while (!raw_ids.empty() && raw_ids.back() == 0) {
+            raw_ids.pop_back();
+        }
+        return static_cast<int>(raw_ids.size());
+    } catch (...) {
+        return 0;
+    }
+}
+
 std::string Tokenizer::decode(const std::vector<int32_t>& ids) {
     if (!tokenizer_) return "";
 

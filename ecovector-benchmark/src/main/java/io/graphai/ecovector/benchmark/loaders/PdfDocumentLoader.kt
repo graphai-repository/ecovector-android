@@ -45,7 +45,7 @@ class PdfDocumentLoader : DomainLoader {
                     inputStreamProvider = { assets.open("$filesDir/$fileName") },
                     title = rawId
                 )
-                val text = JsonlDomainLoader.sanitizeText(doc.extractText())
+                val text = doc.extractText()  // PdfDocument.extractText() internally applies TextCleaner.cleanDocument()
                 if (text.isNotBlank()) {
                     if (documentOnly) {
                         val count = NativeEcoVectorStore.addDocumentsOnly(

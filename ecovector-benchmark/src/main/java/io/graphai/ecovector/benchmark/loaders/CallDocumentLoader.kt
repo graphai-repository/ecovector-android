@@ -3,6 +3,7 @@ package io.graphai.ecovector.benchmark.loaders
 import android.content.res.AssetManager
 import android.util.Log
 import io.graphai.ecovector.NativeEcoVectorStore
+import io.graphai.ecovector.TextCleaner
 import org.json.JSONObject
 
 class CallDocumentLoader : DomainLoader {
@@ -56,7 +57,7 @@ class CallDocumentLoader : DomainLoader {
 
                 val jsonStr = assets.open("$callDir/$fileName").use { it.bufferedReader().readText() }
                 val json = JSONObject(jsonStr)
-                val text = JsonlDomainLoader.sanitizeText(extractCallText(json))
+                val text = TextCleaner.cleanDocument(extractCallText(json))
                 val summary = json.optString("summary_1line", "").trim()
 
                 if (text.isNotBlank()) {

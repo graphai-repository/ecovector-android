@@ -1,27 +1,12 @@
 package io.graphai.ecovector
 
 /**
- * Parameters for text chunking.
+ * Parameters for token-aware text chunking.
  *
- * @param strategy Chunking strategy to use
- * @param chunkSize Maximum chunk size in tokens
- * @param chunkOverlap Overlap between consecutive chunks in tokens
+ * @param maxTokens Maximum tokens per chunk (default: 512)
+ * @param overlapTokens Token overlap between consecutive chunks (default: 216)
  */
 data class ChunkParams(
-    val strategy: ChunkStrategy = ChunkStrategy.SENTENCE,
-    val chunkSize: Int = 256,
-    val chunkOverlap: Int = 64
+    val maxTokens: Int = 216,
+    val overlapTokens: Int = 128
 )
-
-/**
- * Text chunking strategy.
- *
- * @param value Native integer value passed to C++ layer
- */
-enum class ChunkStrategy(val value: Int) {
-    /** Sliding window over word boundaries. */
-    WORD_SLIDING_WINDOW(0),
-
-    /** Sentence-aware chunking that respects sentence boundaries. */
-    SENTENCE(1)
-}

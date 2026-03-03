@@ -40,14 +40,6 @@ Java_io_graphai_ecovector_NativeEcoVectorStore_close(JNIEnv*, jobject) {
 }
 
 JNIEXPORT void JNICALL
-Java_io_graphai_ecovector_NativeEcoVectorStore_setChunkStrategy(
-        JNIEnv*, jobject, jint strategy) {
-    if (g_store) {
-        g_store->setChunkStrategy(static_cast<ecovector::ChunkStrategy>(strategy));
-    }
-}
-
-JNIEXPORT void JNICALL
 Java_io_graphai_ecovector_NativeEcoVectorStore_setChunkPrefix(
         JNIEnv* env, jobject, jstring prefix) {
     if (g_store && prefix) {
@@ -450,13 +442,13 @@ JNIEXPORT jlong JNICALL
 Java_io_graphai_ecovector_NativeEcoVectorStore_addDocumentWithChunkParams(
         JNIEnv* env, jobject,
         jstring text, jstring title,
-        jint chunkStrategy, jint chunkSize, jint chunkOverlap) {
+        jint maxTokens, jint overlapTokens) {
     if (!g_store) return -1;
     try {
         return g_store->addDocumentWithChunkParams(
             jstringToStdString(env, text),
             jstringToStdString(env, title),
-            chunkStrategy, chunkSize, chunkOverlap
+            maxTokens, overlapTokens
         );
     } catch (const std::exception& e) {
         LOGE("addDocumentWithChunkParams failed: %s", e.what());
@@ -468,7 +460,7 @@ JNIEXPORT jint JNICALL
 Java_io_graphai_ecovector_NativeEcoVectorStore_addDocumentsWithChunkParams(
         JNIEnv* env, jobject,
         jobjectArray texts, jobjectArray titles,
-        jint chunkStrategy, jint chunkSize, jint chunkOverlap) {
+        jint maxTokens, jint overlapTokens) {
     if (!g_store) return 0;
     try {
         int len = env->GetArrayLength(texts);
@@ -487,7 +479,7 @@ Java_io_graphai_ecovector_NativeEcoVectorStore_addDocumentsWithChunkParams(
 
         return g_store->addDocumentsWithChunkParams(
             textVec, titleVec,
-            chunkStrategy, chunkSize, chunkOverlap
+            maxTokens, overlapTokens
         );
     } catch (const std::exception& e) {
         LOGE("addDocumentsWithChunkParams failed: %s", e.what());

@@ -23,16 +23,9 @@ object NativeEcoVectorStore {
 
     external fun close()
 
-    // --- Chunking Strategy ---
-    /** 0 = WORD (default), 1 = SENTENCE */
-    external fun setChunkStrategy(strategy: Int)
-
     /** Set a prefix string to prepend to each chunk after splitting. */
     external fun setChunkPrefix(prefix: String)
     external fun clearChunkPrefix()
-
-    const val CHUNK_STRATEGY_WORD = 0
-    const val CHUNK_STRATEGY_SENTENCE = 1
 
     // --- Document Management ---
     /** Add a document. Auto chunks, tokenizes, embeds, and stores. Returns document ID. */
@@ -53,13 +46,13 @@ object NativeEcoVectorStore {
     /** Add a document with custom chunk parameters. Returns document ID. */
     external fun addDocumentWithChunkParams(
         text: String, title: String,
-        chunkStrategy: Int, chunkSize: Int, chunkOverlap: Int
+        maxTokens: Int, overlapTokens: Int
     ): Long
 
     /** Batch add documents with custom chunk parameters. Returns number of documents added. */
     external fun addDocumentsWithChunkParams(
         texts: Array<String>, titles: Array<String>,
-        chunkStrategy: Int, chunkSize: Int, chunkOverlap: Int
+        maxTokens: Int, overlapTokens: Int
     ): Int
 
     /** Remove all documents and chunks. */

@@ -10,6 +10,10 @@ import java.text.Normalizer
  */
 object TextCleaner {
 
+    // HTML 태그 (<tag>, </tag>, <tag attr="val">, <br /> 등)
+    private val HTML_TAGS = Regex("<[^>]+>")
+    private val HTML_ENTITIES = Regex("&(?:nbsp|amp|lt|gt|quot|apos|#\\d+|#x[0-9a-fA-F]+);")
+
     // 장식/불릿 기호 (의미 없이 벡터를 왜곡하는 문자들)
     private val DECORATIVE_SYMBOLS = Regex("[●○◎◇◆□■△▲▽▼☆★♣♠♥♦►▶◀◄→←↑↓↔⇒⇐⇑⇓※☎✔✖✕✓✗✘⊙⊚⊛⊜⊝]")
 
@@ -52,6 +56,10 @@ object TextCleaner {
 
         // 2. 제어문자 제거
         result = CONTROL_CHARS.replace(result, "")
+
+        // 2.5. HTML 태그 및 엔티티 제거
+        result = HTML_TAGS.replace(result, "")
+        result = HTML_ENTITIES.replace(result, " ")
 
         // 3. 전각 ASCII → 반각 변환 (！→!, ０→0, Ａ→A 등)
         result = fullwidthToHalfwidth(result)

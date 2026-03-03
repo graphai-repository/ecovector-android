@@ -37,6 +37,9 @@ ecovector/src/main/cpp/third_party/*/lib/
 # Kotlin
 .kotlin/
 
+# Documentation (local only)
+docs/
+
 # Misc
 *.log
 *.tmp

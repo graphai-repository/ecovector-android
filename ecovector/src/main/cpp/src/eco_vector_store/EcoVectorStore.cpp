@@ -3,8 +3,7 @@
 #include "../SearchUtils.h"
 #include "Tokenizer.h"
 #include "OnnxRuntime.h"
-#include "Chunker.h"
-#include "SentenceChunker.h"
+#include "TokenAwareChunker.h"
 #include "KiwiTokenizer.h"
 #include "KiwiHashUtil.h"
 #include "Embedder.h"
@@ -24,7 +23,7 @@
 #include <regex>
 #include <malloc.h>       // mallopt, M_PURGE
 #include <fstream>        // /proc/self/status
-#include <sstream>        // chunkByLines
+#include <sstream>
 #include <chrono>
 #include <future>
 
@@ -35,17 +34,8 @@
 
 namespace ecovector {
 
-static const int CHUNK_SIZE = 25;
-static const int CHUNK_OVERLAP = 8;
 static const size_t EMBED_BATCH_SIZE = 8;   // ONNX embedding batch (모바일 메모리 고려)
 static const size_t DB_BATCH_SIZE = 32;     // DB insert batch (트랜잭션 묶기)
-
-// sourceType별 최적 청크 파라미터 (chunk_strategy_experiment.py 결과 기반)
-// Call: 대화 텍스트 → 줄 단위 15줄/5오버랩이 최적 (avg_sim=0.2587)
-static const int CALL_CHUNK_LINES = 15;
-static const int CALL_CHUNK_OVERLAP_LINES = 5;
-// PDF: 큰 청크일수록 유사도 높음 → 전체 문서 1청크 (avg_sim=0.5216)
-// SMS/MMS: 기존 WORD 25w/8o 유지
 
 // 네이티브 메모리 RSS(KB)를 /proc/self/status에서 읽기
 static long getNativeRssKb() {
@@ -175,69 +165,16 @@ void EcoVectorStore::close() {
 // Internal helpers
 // ============================================================================
 
-// 줄 기반 청킹: 대화(Call) 텍스트에 최적화
-static std::vector<std::string> chunkByLines(const std::string& text, int maxLines, int overlapLines) {
-    // 줄 분리
-    std::vector<std::string> lines;
-    std::istringstream stream(text);
-    std::string line;
-    while (std::getline(stream, line)) {
-        // trim
-        size_t s = line.find_first_not_of(" \t\r\n");
-        if (s == std::string::npos) continue;
-        size_t e = line.find_last_not_of(" \t\r\n");
-        lines.push_back(line.substr(s, e - s + 1));
-    }
-    if (lines.empty()) return {};
-    if (static_cast<int>(lines.size()) <= maxLines) {
-        std::string joined;
-        for (size_t i = 0; i < lines.size(); ++i) {
-            if (i > 0) joined += '\n';
-            joined += lines[i];
-        }
-        return {joined};
-    }
-
-    std::vector<std::string> chunks;
-    int start = 0;
-    int total = static_cast<int>(lines.size());
-    while (start < total) {
-        int end = std::min(start + maxLines, total);
-        std::string chunk;
-        for (int i = start; i < end; ++i) {
-            if (i > start) chunk += '\n';
-            chunk += lines[i];
-        }
-        chunks.push_back(std::move(chunk));
-        if (end >= total) break;
-        int step = std::max(1, maxLines - overlapLines);
-        start += step;
-    }
-    return chunks;
-}
-
 std::vector<std::string> EcoVectorStore::chunkText(const std::string& text) {
-    return chunkText(text, -1);  // sourceType -1 = 기본 전략
+    return chunkText(text, -1);
 }
 
-std::vector<std::string> EcoVectorStore::chunkText(const std::string& text, int16_t sourceType) {
-    std::vector<std::string> chunks;
+std::vector<std::string> EcoVectorStore::chunkText(const std::string& text, int16_t /*sourceType*/) {
+    // Unified: TokenAwareChunker for all source types (512 tokens, 216 overlap)
+    TokenAwareChunker chunker(tokenizer_.get());
+    auto chunks = chunker.chunk(text);
 
-    if (sourceType == static_cast<int16_t>(SourceType::CALL)) {
-        // Call: 줄 기반 15줄/5오버랩
-        chunks = chunkByLines(text, CALL_CHUNK_LINES, CALL_CHUNK_OVERLAP_LINES);
-    } else if (sourceType == static_cast<int16_t>(SourceType::FILE)) {
-        // PDF/Document: 전체 문서 1청크
-        if (!text.empty()) chunks.push_back(text);
-    } else if (chunkStrategy_ == ChunkStrategy::SENTENCE) {
-        SentenceChunker sentenceChunker;
-        chunks = sentenceChunker.chunk(text);
-    } else {
-        Chunker chunker;
-        chunks = chunker.chunk(text, CHUNK_SIZE, CHUNK_OVERLAP);
-    }
-
-    // prefix가 있으면 각 청크 앞에 붙임
+    // prefix가 있으면 각 청크 앞에 붙임 (Call summary 등)
     if (!chunkPrefix_.empty()) {
         for (auto& chunk : chunks) {
             chunk = chunkPrefix_ + "\n" + chunk;
@@ -247,13 +184,9 @@ std::vector<std::string> EcoVectorStore::chunkText(const std::string& text, int1
 }
 
 std::vector<std::string> EcoVectorStore::chunkTextWithParams(const std::string& text,
-                                                              int strategy, int size, int overlap) {
-    if (strategy == static_cast<int>(ChunkStrategy::SENTENCE)) {
-        SentenceChunker sentenceChunker;
-        return sentenceChunker.chunk(text);
-    }
-    Chunker chunker;
-    return chunker.chunk(text, size, overlap);
+                                                              int maxTokens, int overlapTokens) {
+    TokenAwareChunker chunker(tokenizer_.get(), maxTokens, overlapTokens);
+    return chunker.chunk(text);
 }
 
 std::vector<float> EcoVectorStore::embedText(const std::string& text) {
@@ -1141,7 +1074,7 @@ bool EcoVectorStore::buildBM25Index() {
 
 int64_t EcoVectorStore::addDocumentWithChunkParams(
         const std::string& text, const std::string& title,
-        int chunkStrategy, int chunkSize, int chunkOverlap) {
+        int maxTokens, int overlapTokens) {
     if (!obxManager_ || !tokenizer_ || !onnxRuntime_) return -1;
 
     try {
@@ -1155,7 +1088,7 @@ int64_t EcoVectorStore::addDocumentWithChunkParams(
         int64_t docId = static_cast<int64_t>(docIds[0]);
 
         // 2. Chunk text with custom params
-        auto chunks = chunkTextWithParams(text, chunkStrategy, chunkSize, chunkOverlap);
+        auto chunks = chunkTextWithParams(text, maxTokens, overlapTokens);
         if (chunks.empty()) return docId;
 
         // 3. Process chunks: embed in EMBED_BATCH_SIZE, accumulate, save in DB_BATCH_SIZE
@@ -1190,8 +1123,8 @@ int64_t EcoVectorStore::addDocumentWithChunkParams(
             obxManager_->insertAllChunks(pendingInserts);
         }
 
-        LOGI("addDocumentWithChunkParams: id=%lld, chunks=%zu (strategy=%d, size=%d, overlap=%d)",
-             (long long)docId, chunks.size(), chunkStrategy, chunkSize, chunkOverlap);
+        LOGI("addDocumentWithChunkParams: id=%lld, chunks=%zu (maxTokens=%d, overlap=%d)",
+             (long long)docId, chunks.size(), maxTokens, overlapTokens);
         return docId;
     } catch (const std::exception& e) {
         LOGE("addDocumentWithChunkParams failed: %s", e.what());
@@ -1202,12 +1135,12 @@ int64_t EcoVectorStore::addDocumentWithChunkParams(
 int EcoVectorStore::addDocumentsWithChunkParams(
         const std::vector<std::string>& texts,
         const std::vector<std::string>& titles,
-        int chunkStrategy, int chunkSize, int chunkOverlap) {
+        int maxTokens, int overlapTokens) {
     int count = 0;
     for (size_t i = 0; i < texts.size(); i++) {
         const std::string& title = (i < titles.size()) ? titles[i] : "";
         int64_t id = addDocumentWithChunkParams(texts[i], title,
-                                                 chunkStrategy, chunkSize, chunkOverlap);
+                                                 maxTokens, overlapTokens);
         if (id > 0) count++;
     }
     return count;

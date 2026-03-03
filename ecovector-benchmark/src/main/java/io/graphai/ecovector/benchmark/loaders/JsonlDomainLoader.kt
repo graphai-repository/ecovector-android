@@ -3,6 +3,7 @@ package io.graphai.ecovector.benchmark.loaders
 import android.content.res.AssetManager
 import android.util.Log
 import io.graphai.ecovector.NativeEcoVectorStore
+import io.graphai.ecovector.TextCleaner
 
 /**
  * JSONL 기반 도메인 로더 공통 로직 (SMS, MMS).
@@ -13,9 +14,7 @@ abstract class JsonlDomainLoader : DomainLoader {
         private const val TAG = "JsonlDomainLoader"
         const val BATCH_SIZE = 50
 
-        fun sanitizeText(text: String): String =
-            text.replace("\u0000", "")
-                .replace(Regex("[\\x01-\\x08\\x0B\\x0C\\x0E-\\x1F]"), "")
+        fun sanitizeText(text: String): String = TextCleaner.cleanDocument(text)
 
         fun parseIsoDatetimeToMs(datetime: String): Long {
             return try {

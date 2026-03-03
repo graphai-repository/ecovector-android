@@ -42,8 +42,7 @@ add_library(
         jni/NativeEnsembleRetriever.cpp
         src/eco_vector_store/EcoVectorStore.cpp
         src/tokenizer/Tokenizer.cpp
-        src/chunker/Chunker.cpp
-        src/chunker/SentenceChunker.cpp
+        src/chunker/TokenAwareChunker.cpp
         src/onnx/OnnxRuntime.cpp
         src/object_box/ObxManager.cpp
         src/object_box/schema.obx.cpp

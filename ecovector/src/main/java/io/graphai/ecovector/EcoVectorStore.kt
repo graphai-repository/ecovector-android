@@ -227,7 +227,7 @@ class EcoVectorStore private constructor(
      *
      * @param content Document text content
      * @param title Document title (for identification)
-     * @param chunkParams Chunking parameters (strategy, chunkSize, chunkOverlap)
+     * @param chunkParams Chunking parameters (maxTokens, overlapTokens)
      * @return Document ID (positive on success, -1 on failure)
      */
     fun addDocument(
@@ -238,7 +238,7 @@ class EcoVectorStore private constructor(
         check(isInitialized) { "EcoVectorStore not initialized. Call create() first." }
         return NativeEcoVectorStore.addDocumentWithChunkParams(
             content, title,
-            chunkParams.strategy.value, chunkParams.chunkSize, chunkParams.chunkOverlap
+            chunkParams.maxTokens, chunkParams.overlapTokens
         )
     }
 
@@ -277,7 +277,7 @@ class EcoVectorStore private constructor(
      * Add multiple documents in batch with custom chunking parameters.
      *
      * @param documents List of pairs (content, title)
-     * @param chunkParams Chunking parameters (strategy, chunkSize, chunkOverlap)
+     * @param chunkParams Chunking parameters (maxTokens, overlapTokens)
      * @param progressCallback Optional progress callback (0.0 to 1.0)
      * @return Number of documents successfully added
      */
@@ -291,7 +291,7 @@ class EcoVectorStore private constructor(
         val titles = documents.map { it.second }.toTypedArray()
         return NativeEcoVectorStore.addDocumentsWithChunkParams(
             texts, titles,
-            chunkParams.strategy.value, chunkParams.chunkSize, chunkParams.chunkOverlap
+            chunkParams.maxTokens, chunkParams.overlapTokens
         )
     }
 
