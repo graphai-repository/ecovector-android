@@ -27,8 +27,9 @@ Thumbs.db
 # C++ Build Artifacts
 build_tests/
 
-# Third-party pre-built binaries (headers are tracked)
+# Pre-built native binaries (downloaded at build time)
 ecovector/src/main/cpp/third_party/*/lib/
+ecovector/src/main/jniLibs/
 
 # ML Models
 *.onnx

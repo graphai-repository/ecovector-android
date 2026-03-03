@@ -277,10 +277,25 @@ data class QueryBundle(
 - NDK (CMake 3.22.1 포함)
 - JDK 11+
 
+### 네이티브 라이브러리
+
+프리빌트 네이티브 바이너리(FAISS, Kiwi, ONNX Runtime 등)는 용량 문제로 git에 포함되지 않으며,
+첫 빌드 시 GitHub Releases에서 자동 다운로드됩니다.
+
+- 다운로드 URL은 `gradle.properties`의 `ecovector.nativeLibsUrl`로 변경 가능
+- 오프라인 환경에서는 zip을 수동으로 받아 `ecovector/src/main/` 에 압축 해제
+
+```bash
+# 수동 다운로드 & 배치
+curl -L -o native-libs.zip \
+  https://github.com/graphai-io/ecovector/releases/download/libs-v1/native-libs-arm64-v8a.zip
+unzip native-libs.zip -d ecovector/src/main/
+```
+
 ### 빌드 명령
 
 ```bash
-# 라이브러리 빌드
+# 라이브러리 빌드 (네이티브 바이너리 자동 다운로드)
 ./gradlew :ecovector:assembleRelease
 
 # AAR 생성 경로

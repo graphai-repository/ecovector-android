@@ -7,6 +7,35 @@ plugins {
 group = "io.graphai"
 version = "0.1.0"
 
+val downloadNativeLibs by tasks.registering {
+    description = "Downloads pre-built native libraries required for the build"
+    val markerFile = file("src/main/cpp/third_party/faiss/lib/arm64-v8a/libfaiss.a")
+    onlyIf { !markerFile.exists() }
+
+    doLast {
+        val url = providers.gradleProperty("ecovector.nativeLibsUrl")
+            .getOrElse("https://github.com/graphai-io/ecovector/releases/download/libs-v1/native-libs-arm64-v8a.zip")
+        val zipFile = layout.buildDirectory.file("tmp/native-libs.zip").get().asFile
+        zipFile.parentFile.mkdirs()
+
+        logger.lifecycle("Downloading native libs from $url ...")
+        uri(url).toURL().openStream().use { input ->
+            zipFile.outputStream().use { output -> input.copyTo(output) }
+        }
+
+        logger.lifecycle("Extracting native libs ...")
+        copy {
+            from(zipTree(zipFile))
+            into(file("src/main"))
+        }
+        zipFile.delete()
+    }
+}
+
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn(downloadNativeLibs)
+}
+
 android {
     namespace = "io.graphai.ecovector"
     compileSdk = 36
