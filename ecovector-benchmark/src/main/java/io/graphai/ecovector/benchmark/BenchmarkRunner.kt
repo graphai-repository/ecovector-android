@@ -251,7 +251,7 @@ class BenchmarkRunner(
         progressCallback: ProgressCallback,
         clearBeforeLoad: Boolean = true,
         filterPath: String? = null,
-        config: BenchmarkConfig = BenchmarkConfig.DEFAULT
+        config: BenchmarkConfig
     ): String {
         val tag = "BenchmarkRunner"
 
@@ -293,7 +293,7 @@ class BenchmarkRunner(
     suspend fun runBenchmarkOnly(
         progressCallback: ProgressCallback,
         filterPath: String? = null,
-        config: BenchmarkConfig = BenchmarkConfig.DEFAULT,
+        config: BenchmarkConfig,
         resultCallback: ResultCallback? = null
     ): String {
         val tag = "BenchmarkRunner"
@@ -320,7 +320,7 @@ class BenchmarkRunner(
     suspend fun runAfterReTokenize(
         progressCallback: ProgressCallback,
         filterPath: String? = null,
-        config: BenchmarkConfig = BenchmarkConfig.DEFAULT,
+        config: BenchmarkConfig,
         resultCallback: ResultCallback? = null
     ): String {
         val tag = "BenchmarkRunner"
@@ -355,7 +355,7 @@ class BenchmarkRunner(
     suspend fun runWithIndexSweep(
         progressCallback: ProgressCallback,
         filterPath: String? = null,
-        config: BenchmarkConfig = BenchmarkConfig.DEFAULT,
+        config: BenchmarkConfig,
         resultCallback: ResultCallback? = null
     ): String {
         val tag = "BenchmarkRunner"
@@ -450,7 +450,7 @@ class BenchmarkRunner(
         forceEmbedAll: Boolean = false,
         progressCallback: ProgressCallback? = null,
         filterPath: String? = null,
-        config: BenchmarkConfig = BenchmarkConfig.DEFAULT,
+        config: BenchmarkConfig,
         resultCallback: ResultCallback? = null,
         importPath: String? = null
     ): String {

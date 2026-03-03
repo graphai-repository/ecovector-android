@@ -18,6 +18,7 @@ local.properties
 # IDE
 .idea/
 *.iws
+.vscode/
 
 # OS
 .DS_Store
