@@ -1,0 +1,45 @@
+{
+  "_note1": "KEEP THIS FILE! Benchmark-only ObjectBox model (Query + GroundTruth).",
+  "_note2": "Separate from core model (Document + Chunk) in ecovector module.",
+  "entities": [
+    {
+      "id": "1:1001000000000000001",
+      "lastPropertyId": "12:1001000000000000013",
+      "name": "Query",
+      "properties": [
+        { "id": "1:1001000000000000002", "name": "id", "type": 6, "flags": 1 },
+        { "id": "2:1001000000000000003", "name": "content", "type": 9 },
+        { "id": "3:1001000000000000004", "name": "vector", "type": 28, "flags": 8 },
+        { "id": "4:1001000000000000005", "name": "token_ids", "type": 23 },
+        { "id": "5:1001000000000000006", "name": "_id", "type": 9 },
+        { "id": "6:1001000000000000007", "name": "kiwi_tokens", "type": 23 },
+        { "id": "7:1001000000000000008", "name": "created_at", "type": 6 },
+        { "id": "8:1001000000000000009", "name": "target_types", "type": 9 },
+        { "id": "9:1001000000000000010", "name": "categories", "type": 9 },
+        { "id": "10:1001000000000000011", "name": "split", "type": 9 },
+        { "id": "11:1001000000000000012", "name": "document_external_id", "type": 9 },
+        { "id": "12:1001000000000000013", "name": "refined_query", "type": 9 }
+      ]
+    },
+    {
+      "id": "2:1002000000000000001",
+      "lastPropertyId": "3:1002000000000000004",
+      "name": "GroundTruth",
+      "properties": [
+        { "id": "1:1002000000000000002", "name": "id", "type": 6, "flags": 1 },
+        { "id": "2:1002000000000000003", "name": "query_id", "type": 9 },
+        { "id": "3:1002000000000000004", "name": "doc_id", "type": 9 }
+      ]
+    }
+  ],
+  "lastEntityId": "2:1002000000000000001",
+  "lastIndexId": "",
+  "lastRelationId": "",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}

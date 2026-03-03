@@ -1,0 +1,127 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:9179932940592290193",
+      "lastPropertyId": "10:4405251715006746188",
+      "name": "Chunk",
+      "properties": [
+        {
+          "id": "1:2455507974577173176",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8084283936309515694",
+          "name": "document_id",
+          "type": 6,
+          "flags": 8192
+        },
+        {
+          "id": "3:6702692769779061836",
+          "name": "content",
+          "type": 9
+        },
+        {
+          "id": "4:1462046374052066066",
+          "name": "vector",
+          "indexId": "1:6849331268428372200",
+          "type": 28,
+          "flags": 8,
+          "hnswParams": {
+            "dimensions": 768,
+            "distance-type": "Euclidean",
+            "neighbors-per-node": 8,
+            "indexing-search-count": 20
+          }
+        },
+        {
+          "id": "5:334330371521458599",
+          "name": "token_ids",
+          "type": 23
+        },
+        {
+          "id": "6:2975675897590904734",
+          "name": "chunk_index",
+          "type": 5
+        },
+        {
+          "id": "7:3342692050699206522",
+          "name": "kiwi_tokens",
+          "type": 23
+        },
+        {
+          "id": "8:3806205333954610445",
+          "name": "created_at",
+          "type": 6
+        },
+        {
+          "id": "9:4330687298636121811",
+          "name": "source_type",
+          "type": 2
+        },
+        {
+          "id": "10:4405251715006746188",
+          "name": "sender",
+          "type": 9
+        }
+      ]
+    },
+    {
+      "id": "2:6143900362527639746",
+      "lastPropertyId": "7:2260174545979689167",
+      "name": "Document",
+      "properties": [
+        {
+          "id": "1:4741398273188845619",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5264333650679258855",
+          "name": "content",
+          "type": 9
+        },
+        {
+          "id": "3:1155826969108657222",
+          "name": "_id",
+          "type": 9
+        },
+        {
+          "id": "4:1389202326276852715",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "5:1932946672565023347",
+          "name": "created_at",
+          "type": 6
+        },
+        {
+          "id": "6:2000003994095602920",
+          "name": "source_type",
+          "type": 2
+        },
+        {
+          "id": "7:2260174545979689167",
+          "name": "sender",
+          "type": 9
+        }
+      ]
+    },
+  ],
+  "lastEntityId": "4:7401141559179126524",
+  "lastIndexId": "2:1164857942749024190",
+  "lastRelationId": "",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [7362119470476819865, 7401141559179126524],
+  "retiredIndexUids": [1164857942749024190],
+  "retiredPropertyUids": [5851496329943551164, 6324434862192048363, 7090588204631979052, 7616684493381570428, 6477725019834096866, 4856291815650750130, 5717662545179579024, 5771501407776940794, 6304098144096458332, 6778764699593215330, 8513039833294124725, 8777042917465377853, 9062675902829907114],
+  "retiredRelationUids": [],
+  "version": 1
+}

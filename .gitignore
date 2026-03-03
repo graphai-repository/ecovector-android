@@ -1,0 +1,42 @@
+# Android / Gradle
+*.iml
+.gradle/
+/local.properties
+local.properties
+/build/
+/ecovector/build/
+/ecovector-benchmark/build/
+/ecovector/.cxx/
+/ecovector-benchmark/.cxx/
+/captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.ap_
+*.dex
+
+# IDE
+.idea/
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# C++ Build Artifacts
+build_tests/
+
+# Third-party pre-built binaries (headers are tracked)
+ecovector/src/main/cpp/third_party/*/lib/
+
+# ML Models
+*.onnx
+*.onnx_data
+
+# Kotlin
+.kotlin/
+
+# Misc
+*.log
+*.tmp
+*.swp
