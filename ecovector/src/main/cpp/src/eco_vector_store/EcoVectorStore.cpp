@@ -665,6 +665,8 @@ int EcoVectorStore::exportChunksToSQLite(const std::string& sqlitePath) {
 
     const char* createSql = "CREATE TABLE chunks ("
                             "chunk_id INTEGER PRIMARY KEY, "
+                            "doc_external_id TEXT NOT NULL, "
+                            "chunk_index INTEGER NOT NULL, "
                             "content TEXT NOT NULL, "
                             "embedding BLOB)";
     rc = sqlite3_exec(db, createSql, nullptr, nullptr, nullptr);
@@ -675,7 +677,9 @@ int EcoVectorStore::exportChunksToSQLite(const std::string& sqlitePath) {
     }
 
     sqlite3_stmt* stmt = nullptr;
-    rc = sqlite3_prepare_v2(db, "INSERT INTO chunks (chunk_id, content) VALUES (?, ?)", -1, &stmt, nullptr);
+    rc = sqlite3_prepare_v2(db,
+        "INSERT INTO chunks (chunk_id, doc_external_id, chunk_index, content) VALUES (?, ?, ?, ?)",
+        -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
         LOGE("exportChunksToSQLite: prepare failed: %s", sqlite3_errmsg(db));
         sqlite3_close(db);
@@ -689,7 +693,9 @@ int EcoVectorStore::exportChunksToSQLite(const std::string& sqlitePath) {
         [&](const std::vector<ChunkData>& batch) {
             for (const auto& chunk : batch) {
                 sqlite3_bind_int64(stmt, 1, static_cast<int64_t>(chunk.id));
-                sqlite3_bind_text(stmt, 2, chunk.content.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_bind_text(stmt, 2, chunk.documentExternalId.c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_bind_int(stmt, 3, chunk.chunkIndex);
+                sqlite3_bind_text(stmt, 4, chunk.content.c_str(), -1, SQLITE_TRANSIENT);
                 sqlite3_step(stmt);
                 sqlite3_reset(stmt);
                 count++;
@@ -711,6 +717,19 @@ int EcoVectorStore::exportChunksToSQLite(const std::string& sqlitePath) {
 int EcoVectorStore::importEmbeddingsFromSQLite(const std::string& sqlitePath) {
     if (!obxManager_) return -1;
 
+    // 1) ObjectBox 청크를 순회하여 (doc_external_id, chunk_index) → obx_id 맵 구축
+    std::unordered_map<std::string, uint64_t> keyToObxId;
+    obxManager_->forEachChunkBatch(DB_BATCH_SIZE, true,
+        [&](const std::vector<ChunkData>& batch) {
+            for (const auto& chunk : batch) {
+                std::string key = chunk.documentExternalId + ":" + std::to_string(chunk.chunkIndex);
+                keyToObxId[key] = chunk.id;
+            }
+        }
+    );
+    LOGI("importEmbeddingsFromSQLite: built lookup map with %zu entries", keyToObxId.size());
+
+    // 2) SQLite 열기
     sqlite3* db = nullptr;
     int rc = sqlite3_open_v2(sqlitePath.c_str(), &db, SQLITE_OPEN_READONLY, nullptr);
     if (rc != SQLITE_OK) {
@@ -719,14 +738,35 @@ int EcoVectorStore::importEmbeddingsFromSQLite(const std::string& sqlitePath) {
         return -1;
     }
 
+    // 3) 새 스키마 (doc_external_id, chunk_index) 우선, 없으면 chunk_id fallback
+    bool hasNewSchema = false;
+    {
+        sqlite3_stmt* probe = nullptr;
+        rc = sqlite3_prepare_v2(db,
+            "SELECT doc_external_id, chunk_index FROM chunks LIMIT 1", -1, &probe, nullptr);
+        if (rc == SQLITE_OK) {
+            hasNewSchema = true;
+            sqlite3_finalize(probe);
+        }
+    }
+
     sqlite3_stmt* stmt = nullptr;
-    rc = sqlite3_prepare_v2(db,
-        "SELECT chunk_id, embedding FROM chunks WHERE embedding IS NOT NULL", -1, &stmt, nullptr);
+    if (hasNewSchema) {
+        rc = sqlite3_prepare_v2(db,
+            "SELECT doc_external_id, chunk_index, embedding FROM chunks WHERE embedding IS NOT NULL",
+            -1, &stmt, nullptr);
+    } else {
+        rc = sqlite3_prepare_v2(db,
+            "SELECT chunk_id, embedding FROM chunks WHERE embedding IS NOT NULL",
+            -1, &stmt, nullptr);
+    }
     if (rc != SQLITE_OK) {
         LOGE("importEmbeddingsFromSQLite: prepare failed: %s", sqlite3_errmsg(db));
         sqlite3_close(db);
         return -1;
     }
+
+    LOGI("importEmbeddingsFromSQLite: using %s matching", hasNewSchema ? "doc_external_id+chunk_index" : "chunk_id");
 
     const size_t EXPECTED_DIM = 768;
     const size_t EXPECTED_BLOB_SIZE = EXPECTED_DIM * sizeof(float);
@@ -737,29 +777,59 @@ int EcoVectorStore::importEmbeddingsFromSQLite(const std::string& sqlitePath) {
     updateBatch.reserve(DB_BATCH_SIZE);
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-        uint64_t chunkId = static_cast<uint64_t>(sqlite3_column_int64(stmt, 0));
-        const void* blobData = sqlite3_column_blob(stmt, 1);
-        int blobSize = sqlite3_column_bytes(stmt, 1);
+        uint64_t obxId = 0;
 
-        if (!blobData || static_cast<size_t>(blobSize) != EXPECTED_BLOB_SIZE) {
-            LOGW("importEmbeddingsFromSQLite: chunk_id=%llu invalid blob size=%d (expected %zu)",
-                 (unsigned long long)chunkId, blobSize, EXPECTED_BLOB_SIZE);
-            errorCount++;
-            continue;
+        if (hasNewSchema) {
+            const char* docExtId = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            int chunkIdx = sqlite3_column_int(stmt, 1);
+            const void* blobData = sqlite3_column_blob(stmt, 2);
+            int blobSize = sqlite3_column_bytes(stmt, 2);
+
+            if (!blobData || static_cast<size_t>(blobSize) != EXPECTED_BLOB_SIZE) {
+                errorCount++;
+                continue;
+            }
+
+            std::string key = std::string(docExtId ? docExtId : "") + ":" + std::to_string(chunkIdx);
+            auto it = keyToObxId.find(key);
+            if (it == keyToObxId.end()) {
+                errorCount++;
+                continue;
+            }
+            obxId = it->second;
+
+            std::vector<float> vec(EXPECTED_DIM);
+            std::memcpy(vec.data(), blobData, EXPECTED_BLOB_SIZE);
+
+            auto existingChunk = obxManager_->getChunkById(obxId, false);
+            if (!existingChunk) {
+                errorCount++;
+                continue;
+            }
+            existingChunk->vector = std::move(vec);
+            updateBatch.push_back(std::move(*existingChunk));
+        } else {
+            // chunk_id fallback
+            uint64_t chunkId = static_cast<uint64_t>(sqlite3_column_int64(stmt, 0));
+            const void* blobData = sqlite3_column_blob(stmt, 1);
+            int blobSize = sqlite3_column_bytes(stmt, 1);
+
+            if (!blobData || static_cast<size_t>(blobSize) != EXPECTED_BLOB_SIZE) {
+                errorCount++;
+                continue;
+            }
+
+            auto existingChunk = obxManager_->getChunkById(chunkId, false);
+            if (!existingChunk) {
+                errorCount++;
+                continue;
+            }
+
+            std::vector<float> vec(EXPECTED_DIM);
+            std::memcpy(vec.data(), blobData, EXPECTED_BLOB_SIZE);
+            existingChunk->vector = std::move(vec);
+            updateBatch.push_back(std::move(*existingChunk));
         }
-
-        std::vector<float> vec(EXPECTED_DIM);
-        std::memcpy(vec.data(), blobData, EXPECTED_BLOB_SIZE);
-
-        auto existingChunk = obxManager_->getChunkById(chunkId, false);
-        if (!existingChunk) {
-            LOGW("importEmbeddingsFromSQLite: chunk_id=%llu not found in ObjectBox", (unsigned long long)chunkId);
-            errorCount++;
-            continue;
-        }
-
-        existingChunk->vector = std::move(vec);
-        updateBatch.push_back(std::move(*existingChunk));
 
         if (updateBatch.size() >= DB_BATCH_SIZE) {
             obxManager_->updateAllChunks(updateBatch);
