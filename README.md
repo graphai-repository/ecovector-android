@@ -92,6 +92,33 @@ ecovector-android/
                         └── EnsembleRetriever: 위 결과를 RRF 또는 RSF로 퓨전
 ```
 
+### 벤치마크 파이프라인 (PipelineStage)
+
+11개 단계 enum 기반 유연한 제어. `StageDependencyResolver`가 의존성을 자동 해석합니다.
+
+**downstream (cascade):**
+```
+ECO_LOAD → ECO_CHUNK → ECO_EMBED → ECO_VECTOR_INDEX
+                                  → ECO_TOKENIZE → ECO_BM25_INDEX
+ECO_IMPORT_EMBED → ECO_VECTOR_INDEX
+                 → ECO_TOKENIZE → ECO_BM25_INDEX
+BENCH_LOAD → BENCH_EMBED, BENCH_TOKENIZE
+```
+
+**prerequisites (cascade 없이 단순 추가):**
+```
+ECO_EXPORT_CHUNKS → {ECO_LOAD, ECO_CHUNK}
+```
+
+### 청크 Export / Import
+
+PC에서 임베딩을 생성하여 기기에 임포트할 수 있습니다.
+
+- **Export**: `exportChunksToSQLite()` → `chunks(chunk_id, doc_external_id, chunk_index, content, embedding)`
+- **Import**: `importEmbeddingsFromSQLite()` → `(doc_external_id, chunk_index)` 기반 매칭
+  - `pm clear` 후에도 안정적으로 동작 (ObjectBox auto-increment ID에 비의존)
+  - 구 스키마(`chunk_id`만) fallback 지원
+
 ## Quick Start
 
 ```kotlin
