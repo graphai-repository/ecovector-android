@@ -220,8 +220,10 @@ class BenchmarkDatasetLoader(
 
                 if (resolvedTargets.isEmpty()) {
                     skippedOrphan++
-                    return@forEachIndexed
+                    // orphan이어도 스킵하지 않음
                 }
+
+                val evalTopK = json.optInt("top_k", 0)
 
                 val id = NativeBenchmarkRunner.saveQueryTextOnly(
                     externalId = queryExternalId,
@@ -230,7 +232,8 @@ class BenchmarkDatasetLoader(
                     createdAt = 0L,
                     targetTypes = domains.filter { it != "image" }.sorted().joinToString(","),
                     categories = json.optString("catogory", ""),
-                    split = ""
+                    split = "",
+                    evalTopK = evalTopK
                 )
 
                 if (id > 0) {
@@ -303,7 +306,8 @@ class BenchmarkDatasetLoader(
             val externalId: String,
             val targetCompositeIds: List<String>,
             val targetTypes: String,
-            val categories: String
+            val categories: String,
+            val evalTopK: Int = 0        // LLM 결정 평가 top-K (5 또는 50)
         )
 
         val parsedQueries = mutableListOf<ParsedQuery>()
@@ -348,7 +352,7 @@ class BenchmarkDatasetLoader(
 
                 if (resolvedTargets.isEmpty()) {
                     skippedOrphan++
-                    return@forEach
+                    // orphan이어도 스킵하지 않음 — 검색은 수행, GT만 없음
                 }
 
                 parsedQueries.add(ParsedQuery(
@@ -357,7 +361,8 @@ class BenchmarkDatasetLoader(
                     externalId = queryExternalId,
                     targetCompositeIds = resolvedTargets,
                     targetTypes = domains.filter { it != "image" }.sorted().joinToString(","),
-                    categories = json.optString("catogory", "")
+                    categories = json.optString("catogory", ""),
+                    evalTopK = json.optInt("top_k", 0)
                 ))
             } catch (e: Exception) {
                 Log.w(TAG, "GT: parse failed: ${e.message}")
@@ -379,7 +384,8 @@ class BenchmarkDatasetLoader(
             val queryId = NativeBenchmarkRunner.saveQueryRaw(
                 pq.externalId, pq.text, pq.embeddingText,
                 tokenIds, embedding, kiwiTokens,
-                0L, pq.targetTypes, pq.categories, ""
+                0L, pq.targetTypes, pq.categories, "",
+                pq.evalTopK
             )
 
             if (queryId > 0) {

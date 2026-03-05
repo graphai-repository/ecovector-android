@@ -4,7 +4,7 @@
   "entities": [
     {
       "id": "1:1001000000000000001",
-      "lastPropertyId": "12:1001000000000000013",
+      "lastPropertyId": "13:1001000000000000014",
       "name": "Query",
       "properties": [
         { "id": "1:1001000000000000002", "name": "id", "type": 6, "flags": 1 },
@@ -18,7 +18,8 @@
         { "id": "9:1001000000000000010", "name": "categories", "type": 9 },
         { "id": "10:1001000000000000011", "name": "split", "type": 9 },
         { "id": "11:1001000000000000012", "name": "document_external_id", "type": 9 },
-        { "id": "12:1001000000000000013", "name": "refined_query", "type": 9 }
+        { "id": "12:1001000000000000013", "name": "refined_query", "type": 9 },
+        { "id": "13:1001000000000000014", "name": "eval_top_k", "type": 5 }
       ]
     },
     {

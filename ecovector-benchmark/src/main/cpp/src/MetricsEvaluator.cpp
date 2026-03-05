@@ -66,7 +66,7 @@ EvaluationResult MetricsEvaluator::evaluate(
 
         const auto& targetDocIds = gt_.getTargetDocIds(queries[i].externalId);
 
-        // GT 수에 따라 평가 K 결정: GT > topK이면 LARGE_K(50) 사용
+        // 평가 K 결정: GT 수 기반 (GT > topK → LARGE_K, 그 외 → topK)
         uint32_t evalK = (!targetDocIds.empty() && targetDocIds.size() > topK) ? LARGE_K : topK;
         uint32_t dedupLimit = std::max(outputTopK, evalK);
         auto dedupedResults = deduplicateByDocument(std::move(allResults[i]), dedupLimit);

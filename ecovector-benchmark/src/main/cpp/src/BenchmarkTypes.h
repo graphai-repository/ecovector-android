@@ -18,6 +18,7 @@ struct QueryData {
     std::string targetTypes;    // comma-separated: "call,sms"
     std::string categories;     // comma-separated
     std::string split;          // "valid" or "test" (benchmark split)
+    int32_t evalTopK = 0;       // LLM이 결정한 평가 top-K (5 또는 50, 0=기본값)
 };
 
 struct GroundTruthData {

@@ -24,6 +24,7 @@ struct Query {
     std::string split;
     std::string document_external_id;
     std::string refined_query;
+    int32_t eval_top_k = 0;
 
     struct _OBX_MetaInfo {
         static constexpr obx_schema_id entityId() { return 1; }
@@ -48,6 +49,7 @@ struct Query_ {
     static const obx::Property<Query, OBXPropertyType_String> split;
     static const obx::Property<Query, OBXPropertyType_String> document_external_id;
     static const obx::Property<Query, OBXPropertyType_String> refined_query;
+    static const obx::Property<Query, OBXPropertyType_Int> eval_top_k;
 };
 
 struct GroundTruth_;

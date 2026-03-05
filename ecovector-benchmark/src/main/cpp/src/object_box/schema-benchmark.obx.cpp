@@ -14,6 +14,7 @@ const obx::Property<ecovector_bench::Query, OBXPropertyType_String> ecovector_be
 const obx::Property<ecovector_bench::Query, OBXPropertyType_String> ecovector_bench::Query_::split(10);
 const obx::Property<ecovector_bench::Query, OBXPropertyType_String> ecovector_bench::Query_::document_external_id(11);
 const obx::Property<ecovector_bench::Query, OBXPropertyType_String> ecovector_bench::Query_::refined_query(12);
+const obx::Property<ecovector_bench::Query, OBXPropertyType_Int> ecovector_bench::Query_::eval_top_k(13);
 
 void ecovector_bench::Query::_OBX_MetaInfo::toFlatBuffer(
         flatbuffers::FlatBufferBuilder& fbb, const ecovector_bench::Query& object) {
@@ -41,6 +42,7 @@ void ecovector_bench::Query::_OBX_MetaInfo::toFlatBuffer(
     fbb.AddOffset(22, offsetsplit);          // prop 10: split
     fbb.AddOffset(24, offsetdocument_external_id); // prop 11: document_external_id
     fbb.AddOffset(26, offsetrefined_query);  // prop 12: refined_query
+    fbb.AddElement(28, object.eval_top_k);   // prop 13: eval_top_k
     flatbuffers::Offset<flatbuffers::Table> offset;
     offset.o = fbb.EndTable(fbStart);
     fbb.Finish(offset);
@@ -84,6 +86,7 @@ void ecovector_bench::Query::_OBX_MetaInfo::fromFlatBuffer(
       if (p) o.document_external_id.assign(p->c_str(), p->size()); else o.document_external_id.clear(); }
     { auto* p = table->GetPointer<const flatbuffers::String*>(26);
       if (p) o.refined_query.assign(p->c_str(), p->size()); else o.refined_query.clear(); }
+    o.eval_top_k = table->GetField<int32_t>(28, 0);
 }
 
 // ==================== GroundTruth ====================

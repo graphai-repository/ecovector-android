@@ -29,7 +29,8 @@ static inline OBX_model* create_benchmark_obx_model() {
     obx_model_property(model, "split", OBXPropertyType_String, 10, 1001000000000000011ULL);
     obx_model_property(model, "document_external_id", OBXPropertyType_String, 11, 1001000000000000012ULL);
     obx_model_property(model, "refined_query", OBXPropertyType_String, 12, 1001000000000000013ULL);
-    obx_model_entity_last_property_id(model, 12, 1001000000000000013ULL);
+    obx_model_property(model, "eval_top_k", OBXPropertyType_Int, 13, 1001000000000000014ULL);
+    obx_model_entity_last_property_id(model, 13, 1001000000000000014ULL);
 
     obx_model_entity(model, "GroundTruth", 2, 1002000000000000001ULL);
     obx_model_property(model, "id", OBXPropertyType_Long, 1, 1002000000000000002ULL);

@@ -321,9 +321,10 @@ std::string BenchmarkRunner::runRegisteredRetrievers(uint32_t topK,
             constexpr uint32_t DETAIL_TOP_K = LARGE_K;
             auto evalResult = evaluator.evaluate(methodName, queries, topK,
                 [&useBundles, retriever, &gt, &queries, topK](size_t queryIdx) {
-                    // GT > topK → retrieve with LARGE_K for near-miss analysis
+                    // GT 기반으로 검색 K 결정
                     const auto& targetIds = gt->getTargetDocIds(queries[queryIdx].externalId);
-                    if (targetIds.size() > topK) {
+                    bool needLargeK = targetIds.size() > topK;
+                    if (needLargeK) {
                         IRetriever::Params largeParams;
                         largeParams.topK = LARGE_K;
                         return retriever->retrieve(useBundles[queryIdx], largeParams);
