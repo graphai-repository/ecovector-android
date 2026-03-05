@@ -16,6 +16,7 @@ class BenchmarkDatasetLoader(
     private val assets: AssetManager,
     private val datasetDir: String = "datasets/uplus_dataset/data",
     private val gtPath: String = "datasets/uplus_dataset/quries/valid_filters.jsonl",
+    private val gtFilePath: String? = null,
     private val domainLoaders: List<DomainLoader> = listOf(
         PdfDocumentLoader(), MmsDocumentLoader(), SmsDocumentLoader(), CallDocumentLoader()
     )
@@ -421,7 +422,13 @@ class BenchmarkDatasetLoader(
     // ==================== Helpers ====================
 
     private fun readJsonlAsset(assetPath: String): List<String> {
-        return assets.open(assetPath).bufferedReader().useLines { lines ->
+        val inputStream = if (gtFilePath != null && assetPath == gtPath) {
+            Log.i(TAG, "Reading GT from filesystem: $gtFilePath")
+            java.io.File(gtFilePath).inputStream()
+        } else {
+            assets.open(assetPath)
+        }
+        return inputStream.bufferedReader().useLines { lines ->
             lines.filter { it.isNotBlank() && it.trim().startsWith("{") }.toList()
         }
     }
