@@ -14,12 +14,15 @@ val downloadNativeLibs by tasks.registering {
 
     doLast {
         val url = providers.gradleProperty("ecovector.nativeLibsUrl")
-            .getOrElse("https://github.com/graphai-io/ecovector/releases/download/libs-v1/native-libs-arm64-v8a.zip")
+            .getOrElse("https://github.com/graphai-repository/ecovector-android/releases/download/libs-v1/native-libs-arm64-v8a.zip")
         val zipFile = layout.buildDirectory.file("tmp/native-libs.zip").get().asFile
         zipFile.parentFile.mkdirs()
 
         logger.lifecycle("Downloading native libs from $url ...")
-        uri(url).toURL().openStream().use { input ->
+        val conn = uri(url).toURL().openConnection() as java.net.HttpURLConnection
+        conn.instanceFollowRedirects = true
+        conn.connect()
+        conn.inputStream.use { input ->
             zipFile.outputStream().use { output -> input.copyTo(output) }
         }
 
