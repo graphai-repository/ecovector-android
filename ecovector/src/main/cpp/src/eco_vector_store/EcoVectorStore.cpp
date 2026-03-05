@@ -768,7 +768,7 @@ int EcoVectorStore::importEmbeddingsFromSQLite(const std::string& sqlitePath) {
 
     LOGI("importEmbeddingsFromSQLite: using %s matching", hasNewSchema ? "doc_external_id+chunk_index" : "chunk_id");
 
-    const size_t EXPECTED_DIM = 768;
+    const size_t EXPECTED_DIM = 1024;
     const size_t EXPECTED_BLOB_SIZE = EXPECTED_DIM * sizeof(float);
 
     int count = 0;
