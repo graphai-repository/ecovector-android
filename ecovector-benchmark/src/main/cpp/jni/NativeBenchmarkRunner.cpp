@@ -65,7 +65,7 @@ Java_io_graphai_ecovector_benchmark_NativeBenchmarkRunner_saveQueryRaw(
         jintArray tokenIds, jfloatArray embedding,
         jintArray kiwiTokens,
         jlong createdAt, jstring targetTypes, jstring categories,
-        jstring splitJ) {
+        jstring splitJ, jint evalTopK) {
     if (!gBenchmarkObxManager) {
         LOGE("saveQueryRaw: BenchmarkObxManager not initialized");
         return -1;
@@ -81,6 +81,7 @@ Java_io_graphai_ecovector_benchmark_NativeBenchmarkRunner_saveQueryRaw(
     q.targetTypes = jni_utils::toString(env, targetTypes);
     q.categories = jni_utils::toString(env, categories);
     q.split = splitJ ? jni_utils::toString(env, splitJ) : "";
+    q.evalTopK = evalTopK;
     return static_cast<jlong>(gBenchmarkObxManager->insertQuery(q));
 }
 
@@ -182,7 +183,7 @@ Java_io_graphai_ecovector_benchmark_NativeBenchmarkRunner_saveQueryTextOnly(
         JNIEnv* env, jobject,
         jstring externalId, jstring text, jstring refinedQueryJ,
         jlong createdAt, jstring targetTypes, jstring categories,
-        jstring splitJ) {
+        jstring splitJ, jint evalTopK) {
     if (!gBenchmarkObxManager) {
         LOGE("saveQueryTextOnly: BenchmarkObxManager not initialized");
         return -1;
@@ -195,6 +196,7 @@ Java_io_graphai_ecovector_benchmark_NativeBenchmarkRunner_saveQueryTextOnly(
     q.targetTypes = targetTypes ? jni_utils::toString(env, targetTypes) : "";
     q.categories = categories ? jni_utils::toString(env, categories) : "";
     q.split = splitJ ? jni_utils::toString(env, splitJ) : "";
+    q.evalTopK = evalTopK;
     return static_cast<jlong>(gBenchmarkObxManager->insertQueryTextOnly(q));
 }
 
@@ -212,6 +214,16 @@ Java_io_graphai_ecovector_benchmark_NativeBenchmarkRunner_embedAllQueries(
             return {std::move(vec), std::move(tokIds)};
         }
     );
+}
+
+JNIEXPORT jint JNICALL
+Java_io_graphai_ecovector_benchmark_NativeBenchmarkRunner_importQueryEmbeddingsFromSQLite(
+        JNIEnv* env, jobject, jstring jDbPath) {
+    if (!gBenchmarkObxManager) return -1;
+    const char* dbPath = env->GetStringUTFChars(jDbPath, nullptr);
+    int result = gBenchmarkObxManager->importQueryEmbeddingsFromSQLite(dbPath);
+    env->ReleaseStringUTFChars(jDbPath, dbPath);
+    return result;
 }
 
 JNIEXPORT jint JNICALL

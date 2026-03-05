@@ -542,6 +542,13 @@ class BenchmarkRunner(
             Log.i(tag, "bench_load: $count queries loaded (text-only)")
         }
 
+        // 쿼리 임베딩 임포트 (같은 SQLite에 query_embeddings 테이블이 있으면 자동 임포트)
+        if (PipelineStage.ECO_IMPORT_EMBED in stages && importPath != null) {
+            val queryImportCount = NativeBenchmarkRunner.importQueryEmbeddingsFromSQLite(importPath)
+            Log.i(tag, "Query embedding import: $queryImportCount queries")
+            stageProgress("쿼리 임베딩 임포트: ${queryImportCount}개")
+        }
+
         if (PipelineStage.BENCH_EMBED in stages) {
             stageProgress("[Phase 2] bench_embed: 질의 임베딩")
             val count = NativeBenchmarkRunner.embedAllQueries()

@@ -57,6 +57,14 @@ public:
     // ==================== Lifecycle ====================
     void removeAll();
 
+    /**
+     * SQLite에서 쿼리 임베딩을 임포트한다.
+     * 테이블: query_embeddings(external_id TEXT, embedding BLOB)
+     * @param dbPath SQLite 파일 경로
+     * @return 임포트한 쿼리 수
+     */
+    int importQueryEmbeddingsFromSQLite(const std::string& dbPath);
+
     const std::string& getDbPath() const { return dbPath_; }
 
 private:

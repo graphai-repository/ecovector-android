@@ -57,7 +57,8 @@ object NativeBenchmarkRunner {
         createdAt: Long,
         targetTypes: String,
         categories: String,
-        split: String = ""
+        split: String = "",
+        evalTopK: Int = 0
     ): Long
 
     /** Save ground truth entries for benchmark accuracy evaluation. */
@@ -72,11 +73,14 @@ object NativeBenchmarkRunner {
     external fun saveQueryTextOnly(
         externalId: String, text: String, refinedQuery: String,
         createdAt: Long, targetTypes: String, categories: String,
-        split: String = ""
+        split: String = "", evalTopK: Int = 0
     ): Long
 
     /** 전체 질의 임베딩 (EcoVectorStore의 embedder 사용) */
     external fun embedAllQueries(): Int
+
+    /** SQLite에서 쿼리 임베딩 임포트 (query_embeddings 테이블) */
+    external fun importQueryEmbeddingsFromSQLite(dbPath: String): Int
 
     /** 전체 질의 Kiwi 토큰화 */
     external fun tokenizeAllQueries(): Int

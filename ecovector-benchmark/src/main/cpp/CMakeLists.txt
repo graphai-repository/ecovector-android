@@ -63,6 +63,7 @@ target_include_directories(
     ${flatbuffers_SOURCE_DIR}/include
     ${NLOHMANN_INCLUDE}
     ${TOKENIZERS_CPP_INCLUDE}
+    ${ECOVECTOR_CPP_DIR}/third_party/sqlite3
 )
 
 target_link_libraries(

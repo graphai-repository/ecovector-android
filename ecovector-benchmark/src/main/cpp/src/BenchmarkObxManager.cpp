@@ -8,9 +8,11 @@
 #include <json.hpp>
 
 #include <android/log.h>
+#include <sqlite3.h>
 #include <stdexcept>
 #include <algorithm>
 #include <cstring>
+#include <unordered_map>
 
 #define LOG_TAG "BenchmarkObxManager"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -52,6 +54,7 @@ static ecovector_bench::Query toObxQuery(const QueryData& q, bool forInsert) {
     o.target_types  = q.targetTypes;
     o.categories    = q.categories;
     o.split         = q.split;
+    o.eval_top_k    = q.evalTopK;
     return o;
 }
 
@@ -67,6 +70,7 @@ static QueryData fromObxQuery(const ecovector_bench::Query& o, bool includeVecto
     q.targetTypes  = o.target_types;
     q.categories   = o.categories;
     q.split        = o.split;
+    q.evalTopK     = o.eval_top_k;
     if (includeVector) q.vector = o.vector;
     return q;
 }
@@ -285,6 +289,73 @@ bool BenchmarkObxManager::reTokenizeAllKiwiTokens(
     }
     LOGI("Re-tokenized %zu queries", updated);
     return true;
+}
+
+int BenchmarkObxManager::importQueryEmbeddingsFromSQLite(const std::string& dbPath) {
+    sqlite3* db = nullptr;
+    int rc = sqlite3_open_v2(dbPath.c_str(), &db, SQLITE_OPEN_READONLY, nullptr);
+    if (rc != SQLITE_OK) {
+        LOGE("importQueryEmbeddings: cannot open %s: %s", dbPath.c_str(), sqlite3_errmsg(db));
+        if (db) sqlite3_close(db);
+        return -1;
+    }
+
+    // query_embeddings 테이블 존재 확인
+    sqlite3_stmt* probe = nullptr;
+    rc = sqlite3_prepare_v2(db, "SELECT external_id, embedding FROM query_embeddings LIMIT 1", -1, &probe, nullptr);
+    if (rc != SQLITE_OK) {
+        LOGI("importQueryEmbeddings: no query_embeddings table, skipping");
+        sqlite3_close(db);
+        return 0;
+    }
+    sqlite3_finalize(probe);
+
+    // externalId → obx id 매핑 빌드
+    auto all = pImpl_->boxQuery->getAll();
+    std::unordered_map<std::string, obx_id> extIdMap;
+    for (auto& q : all) {
+        extIdMap[q->_id] = q->id;
+    }
+
+    // 임포트
+    sqlite3_stmt* stmt = nullptr;
+    sqlite3_prepare_v2(db, "SELECT external_id, embedding FROM query_embeddings WHERE embedding IS NOT NULL", -1, &stmt, nullptr);
+
+    int count = 0, errorCount = 0;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char* extId = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        const void* blobData = sqlite3_column_blob(stmt, 1);
+        int blobSize = sqlite3_column_bytes(stmt, 1);
+
+        if (!extId || !blobData || blobSize <= 0 || blobSize % sizeof(float) != 0) {
+            errorCount++;
+            continue;
+        }
+
+        auto it = extIdMap.find(extId);
+        if (it == extIdMap.end()) {
+            continue;  // 쿼리 미매칭 (다른 split 등)
+        }
+
+        size_t dim = blobSize / sizeof(float);
+        std::vector<float> vec(dim);
+        std::memcpy(vec.data(), blobData, blobSize);
+
+        // ObjectBox 업데이트
+        auto existing = pImpl_->boxQuery->get(it->second);
+        if (existing) {
+            existing->vector = std::move(vec);
+            obx::Transaction txn(pImpl_->store->txWrite());
+            pImpl_->boxQuery->put(*existing);
+            txn.success();
+            count++;
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    LOGI("importQueryEmbeddings: imported %d queries (%d errors)", count, errorCount);
+    return count;
 }
 
 // ==================== GroundTruth ====================
