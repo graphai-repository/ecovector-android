@@ -82,6 +82,9 @@ object NativeBenchmarkRunner {
     /** SQLite에서 쿼리 임베딩 임포트 (query_embeddings 테이블) */
     external fun importQueryEmbeddingsFromSQLite(dbPath: String): Int
 
+    /** 쿼리를 SQLite로 export (queries 테이블: external_id, content) */
+    external fun exportQueriesToSQLite(dbPath: String): Int
+
     /** 전체 질의 Kiwi 토큰화 */
     external fun tokenizeAllQueries(): Int
 

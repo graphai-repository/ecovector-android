@@ -98,12 +98,14 @@ ecovector-android/
 
 **downstream (cascade):**
 ```
-ECO_LOAD → ECO_CHUNK → ECO_EMBED → ECO_VECTOR_INDEX
-                                  → ECO_TOKENIZE → ECO_BM25_INDEX
-ECO_IMPORT_EMBED → ECO_VECTOR_INDEX
-                 → ECO_TOKENIZE → ECO_BM25_INDEX
+ECO_LOAD → ECO_CHUNK → ECO_EMBED ─┬─ ECO_VECTOR_INDEX
+                                   └─ ECO_TOKENIZE → ECO_BM25_INDEX
+ECO_IMPORT_EMBED ─┬─ ECO_VECTOR_INDEX
+                  └─ ECO_TOKENIZE → ECO_BM25_INDEX
 BENCH_LOAD → BENCH_EMBED, BENCH_TOKENIZE
 ```
+
+> ECO_CHUNK는 ECO_EMBED 하나만 cascade. ECO_EMBED에서 {ECO_VECTOR_INDEX, ECO_TOKENIZE}로 분기됨.
 
 **prerequisites (cascade 없이 단순 추가):**
 ```

@@ -65,6 +65,12 @@ public:
      */
     int importQueryEmbeddingsFromSQLite(const std::string& dbPath);
 
+    /**
+     * 쿼리를 SQLite로 export한다. 기존 DB에 queries 테이블을 추가(또는 교체).
+     * 테이블: queries(external_id TEXT PRIMARY KEY, content TEXT NOT NULL)
+     */
+    int exportQueriesToSQLite(const std::string& dbPath);
+
     const std::string& getDbPath() const { return dbPath_; }
 
 private:

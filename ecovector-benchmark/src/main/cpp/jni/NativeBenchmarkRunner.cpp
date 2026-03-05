@@ -227,6 +227,16 @@ Java_io_graphai_ecovector_benchmark_NativeBenchmarkRunner_importQueryEmbeddingsF
 }
 
 JNIEXPORT jint JNICALL
+Java_io_graphai_ecovector_benchmark_NativeBenchmarkRunner_exportQueriesToSQLite(
+        JNIEnv* env, jobject, jstring jDbPath) {
+    if (!gBenchmarkObxManager) return -1;
+    const char* dbPath = env->GetStringUTFChars(jDbPath, nullptr);
+    int result = gBenchmarkObxManager->exportQueriesToSQLite(dbPath);
+    env->ReleaseStringUTFChars(jDbPath, dbPath);
+    return result;
+}
+
+JNIEXPORT jint JNICALL
 Java_io_graphai_ecovector_benchmark_NativeBenchmarkRunner_tokenizeAllQueries(
         JNIEnv*, jobject) {
     if (!gBenchmarkObxManager) return -1;
