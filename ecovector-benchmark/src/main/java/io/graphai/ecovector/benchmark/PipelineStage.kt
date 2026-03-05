@@ -11,6 +11,8 @@ enum class PipelineStage(val intentKey: String, val phase: Int) {
     ECO_BM25_INDEX("eco_bm25_index", 1),
     BENCH_LOAD("bench_load", 2),
     BENCH_EMBED("bench_embed", 2),
+    BENCH_IMPORT_EMBED("bench_import_embed", 2),
+    BENCH_EXPORT_QUERIES("bench_export_queries", 2),
     BENCH_TOKENIZE("bench_tokenize", 2);
 
     companion object {

@@ -358,6 +358,48 @@ int BenchmarkObxManager::importQueryEmbeddingsFromSQLite(const std::string& dbPa
     return count;
 }
 
+int BenchmarkObxManager::exportQueriesToSQLite(const std::string& dbPath) {
+    sqlite3* db = nullptr;
+    int rc = sqlite3_open(dbPath.c_str(), &db);
+    if (rc != SQLITE_OK) {
+        LOGE("exportQueries: failed to open %s: %s", dbPath.c_str(), sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return -1;
+    }
+
+    sqlite3_exec(db, "DROP TABLE IF EXISTS queries", nullptr, nullptr, nullptr);
+    rc = sqlite3_exec(db, "CREATE TABLE queries ("
+                          "external_id TEXT PRIMARY KEY, "
+                          "content TEXT NOT NULL)", nullptr, nullptr, nullptr);
+    if (rc != SQLITE_OK) {
+        LOGE("exportQueries: CREATE TABLE failed: %s", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return -1;
+    }
+
+    sqlite3_stmt* stmt = nullptr;
+    sqlite3_prepare_v2(db, "INSERT INTO queries (external_id, content) VALUES (?, ?)", -1, &stmt, nullptr);
+
+    auto all = pImpl_->boxQuery->getAll();
+    int count = 0;
+
+    sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+    for (const auto& q : all) {
+        const std::string& text = q->refined_query.empty() ? q->content : q->refined_query;
+        sqlite3_bind_text(stmt, 1, q->_id.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, text.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_step(stmt);
+        sqlite3_reset(stmt);
+        count++;
+    }
+    sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    LOGI("exportQueries: exported %d queries to %s", count, dbPath.c_str());
+    return count;
+}
+
 // ==================== GroundTruth ====================
 
 std::vector<GroundTruthData> BenchmarkObxManager::getAllGroundTruths() {

@@ -147,7 +147,8 @@ class BenchmarkRunner(
         config: BenchmarkConfig,
         filterPath: String?,
         progressCallback: ProgressCallback? = null,
-        resultCallback: ResultCallback? = null
+        resultCallback: ResultCallback? = null,
+        split: String? = null
     ): String {
         val tag = "BenchmarkRunner"
         val allMethodResults = org.json.JSONArray()
@@ -165,7 +166,7 @@ class BenchmarkRunner(
             val handleSet = createRetrieverHandleSet(spec)
             try {
                 val singleResult = NativeBenchmarkRunner.runRegisteredRetrievers(
-                    longArrayOf(handleSet.mainHandle), config.evaluationTopK, filterPath
+                    longArrayOf(handleSet.mainHandle), config.evaluationTopK, filterPath, split
                 )
                 val parsed = org.json.JSONObject(singleResult)
                 if (baseJson == null) baseJson = parsed
@@ -452,7 +453,8 @@ class BenchmarkRunner(
         filterPath: String? = null,
         config: BenchmarkConfig,
         resultCallback: ResultCallback? = null,
-        importPath: String? = null
+        importPath: String? = null,
+        split: String? = null
     ): String {
         val tag = "BenchmarkRunner"
 
@@ -542,14 +544,20 @@ class BenchmarkRunner(
             Log.i(tag, "bench_load: $count queries loaded (text-only)")
         }
 
-        // 쿼리 임베딩 임포트 (같은 SQLite에 query_embeddings 테이블이 있으면 자동 임포트)
-        if (PipelineStage.ECO_IMPORT_EMBED in stages && importPath != null) {
-            val queryImportCount = NativeBenchmarkRunner.importQueryEmbeddingsFromSQLite(importPath)
-            Log.i(tag, "Query embedding import: $queryImportCount queries")
-            stageProgress("쿼리 임베딩 임포트: ${queryImportCount}개")
+        if (PipelineStage.BENCH_EXPORT_QUERIES in stages) {
+            stageProgress("[Phase 2] bench_export_queries: 쿼리 SQLite export")
+            val exportDir = context.getExternalFilesDir(null)?.absolutePath ?: context.filesDir.absolutePath
+            val exportPath = "$exportDir/chunks_export.db"
+            val exportCount = NativeBenchmarkRunner.exportQueriesToSQLite(exportPath)
+            Log.i(tag, "bench_export_queries: $exportCount queries exported to $exportPath")
         }
 
-        if (PipelineStage.BENCH_EMBED in stages) {
+        // bench_import_embed와 bench_embed는 상호 배타적 (ECO_IMPORT_EMBED 패턴과 동일)
+        if (PipelineStage.BENCH_IMPORT_EMBED in stages) {
+            stageProgress("[Phase 2] bench_import_embed: SQLite에서 쿼리 임베딩 임포트")
+            val queryImportCount = NativeBenchmarkRunner.importQueryEmbeddingsFromSQLite(importPath!!)
+            Log.i(tag, "bench_import_embed: $queryImportCount queries imported from SQLite")
+        } else if (PipelineStage.BENCH_EMBED in stages) {
             stageProgress("[Phase 2] bench_embed: 질의 임베딩")
             val count = NativeBenchmarkRunner.embedAllQueries()
             Log.i(tag, "bench_embed: $count queries embedded")
@@ -571,7 +579,7 @@ class BenchmarkRunner(
         // filterPath="path" → use that path
         // Old code paths pass null for auto-discover, but runPipeline uses explicit semantics
         val effectiveFilterPath = filterPath ?: "NONE"
-        val result = executeBenchmark(config, effectiveFilterPath, progressCallback, resultCallback)
+        val result = executeBenchmark(config, effectiveFilterPath, progressCallback, resultCallback, split)
 
         progressCallback?.onProgress(1.0f, "완료! (문서: $docCount, 청크: $chunkCount, 쿼리: $queryCount)")
         return result

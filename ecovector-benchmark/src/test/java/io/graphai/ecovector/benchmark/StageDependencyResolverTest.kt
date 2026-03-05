@@ -71,10 +71,10 @@ class StageDependencyResolverTest {
     }
 
     @Test
-    fun `bench_load cascades to embed and tokenize`() {
+    fun `bench_load cascades to tokenize only`() {
         val result = resolver.resolve(setOf(PipelineStage.BENCH_LOAD))
         assertEquals(
-            listOf(PipelineStage.BENCH_LOAD, PipelineStage.BENCH_EMBED, PipelineStage.BENCH_TOKENIZE),
+            listOf(PipelineStage.BENCH_LOAD, PipelineStage.BENCH_TOKENIZE),
             result
         )
     }
