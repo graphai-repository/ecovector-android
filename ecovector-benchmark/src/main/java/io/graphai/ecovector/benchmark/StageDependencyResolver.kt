@@ -8,7 +8,9 @@ class StageDependencyResolver {
         PipelineStage.ECO_EMBED to setOf(PipelineStage.ECO_VECTOR_INDEX, PipelineStage.ECO_TOKENIZE),
         PipelineStage.ECO_IMPORT_EMBED to setOf(PipelineStage.ECO_VECTOR_INDEX, PipelineStage.ECO_TOKENIZE),
         PipelineStage.ECO_TOKENIZE to setOf(PipelineStage.ECO_BM25_INDEX),
-        PipelineStage.BENCH_LOAD to setOf(PipelineStage.BENCH_TOKENIZE),
+        PipelineStage.BENCH_LOAD to setOf(PipelineStage.BENCH_EMBED),
+        PipelineStage.BENCH_EMBED to setOf(PipelineStage.BENCH_TOKENIZE),
+        PipelineStage.BENCH_IMPORT_EMBED to setOf(PipelineStage.BENCH_TOKENIZE),
     )
 
     /** cascade 없이 단순 추가되는 선행 단계 */
